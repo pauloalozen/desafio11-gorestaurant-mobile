@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 import React, {
   useEffect,
   useState,
@@ -71,36 +72,93 @@ const FoodDetails: React.FC = () => {
 
   const routeParams = route.params as Params;
 
+  const idFood = routeParams.id;
+
   useEffect(() => {
     async function loadFood(): Promise<void> {
-      // Load a specific food with extras based on routeParams id
+      let detailFood: Food;
+
+      const response = await api.get(`/foods/${idFood}`);
+
+      // eslint-disable-next-line prefer-const
+      detailFood = response.data;
+
+      detailFood.formattedPrice = formatValue(detailFood.price);
+
+      setFood(detailFood);
+
+      let detailExtras = detailFood.extras;
+
+      detailExtras = detailExtras.map(item => {
+        item.quantity = 0;
+        return item;
+      });
+
+      setExtras(detailExtras);
     }
 
     loadFood();
-  }, [routeParams]);
+  }, [routeParams, idFood]);
 
   function handleIncrementExtra(id: number): void {
-    // Increment extra quantity
+    const incrementExtra = extras.map(item => {
+      if (item.id === id) {
+        if (item.quantity) {
+          item.quantity += 1;
+        } else {
+          item.quantity = 1;
+        }
+        return item;
+      }
+      return item;
+    });
+
+    setExtras(incrementExtra);
   }
 
   function handleDecrementExtra(id: number): void {
-    // Decrement extra quantity
+    const decrementExtra = extras.map(item => {
+      if (item.id === id) {
+        if (item.quantity > 0) {
+          item.quantity -= 1;
+        } else {
+          item.quantity = 0;
+        }
+        return item;
+      }
+      return item;
+    });
+
+    setExtras(decrementExtra);
   }
 
   function handleIncrementFood(): void {
-    // Increment food quantity
+    const incrementFoodQuantity = foodQuantity + 1;
+    setFoodQuantity(incrementFoodQuantity);
   }
 
   function handleDecrementFood(): void {
-    // Decrement food quantity
+    if (foodQuantity > 1) {
+      const decrementFoodQuantity = foodQuantity - 1;
+      setFoodQuantity(decrementFoodQuantity);
+    } else {
+      setFoodQuantity(1);
+    }
   }
 
   const toggleFavorite = useCallback(() => {
-    // Toggle if food is favorite or not
+    // precisa incluir nos favoritos ainda.
+    setIsFavorite(!isFavorite);
   }, [isFavorite, food]);
 
   const cartTotal = useMemo(() => {
-    // Calculate cartTotal
+    const totalFood = food.price * foodQuantity;
+
+    const totalExtras = extras.reduce((accum, curr) => {
+      return accum + curr.quantity * curr.value;
+    }, 0);
+
+    return formatValue(totalExtras * foodQuantity + totalFood);
   }, [extras, food, foodQuantity]);
 
   async function handleFinishOrder(): Promise<void> {

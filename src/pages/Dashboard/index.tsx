@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 import React, { useEffect, useState } from 'react';
 import { Image, ScrollView } from 'react-native';
 
@@ -28,11 +29,12 @@ import {
   FoodPricing,
 } from './styles';
 
-interface Food {
+interface IFood {
   id: number;
   name: string;
   description: string;
   price: number;
+  category: number;
   thumbnail_url: string;
   formattedPrice: string;
 }
@@ -44,7 +46,7 @@ interface Category {
 }
 
 const Dashboard: React.FC = () => {
-  const [foods, setFoods] = useState<Food[]>([]);
+  const [foods, setFoods] = useState<IFood[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<
     number | undefined
@@ -54,12 +56,42 @@ const Dashboard: React.FC = () => {
   const navigation = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
-    // Navigate do ProductDetails page
+    navigation.navigate('FoodDetails', { id });
   }
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
-      // Load Foods from API
+      let queryParams = {};
+
+      if (selectedCategory && searchValue) {
+        queryParams = {
+          params: {
+            category: selectedCategory,
+            name: searchValue,
+          },
+        };
+      } else if (selectedCategory) {
+        queryParams = {
+          params: {
+            category: selectedCategory,
+          },
+        };
+      } else if (searchValue) {
+        queryParams = {
+          params: {
+            name: searchValue,
+          },
+        };
+      }
+
+      const response = await api.get('/foods', queryParams);
+
+      const initialFoods = response.data.map(item => {
+        item.formattedPrice = formatValue(item.price);
+        return item;
+      });
+
+      setFoods(initialFoods);
     }
 
     loadFoods();
@@ -67,14 +99,30 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     async function loadCategories(): Promise<void> {
-      // Load categories from API
+      const response = await api.get('/categories');
+
+      setCategories(response.data);
     }
 
     loadCategories();
   }, []);
 
-  function handleSelectCategory(id: number): void {
-    // Select / deselect category
+  async function handleSelectCategory(id: number): Promise<void> {
+    setSelectedCategory(id);
+
+    // const response = await api.get('foods', {
+    //   params: {
+    //     category: id,
+    //   },
+    // });
+
+    // const filterFoods = response.data.map(item => {
+    //   // eslint-disable-next-line no-param-reassign
+    //   item.formattedPrice = formatValue(item.price);
+    //   return item;
+    // });
+
+    // setFoods(filterFoods);
   }
 
   return (

@@ -18,21 +18,36 @@ import {
   FoodPricing,
 } from './styles';
 
-interface Food {
+interface IFood {
   id: number;
   name: string;
   description: string;
   price: number;
-  formattedValue: number;
+  formattedValue: string;
   thumbnail_url: string;
 }
 
 const Orders: React.FC = () => {
-  const [orders, setOrders] = useState<Food[]>([]);
+  const [orders, setOrders] = useState<IFood[]>([]);
 
   useEffect(() => {
     async function loadOrders(): Promise<void> {
-      // Load orders from API
+      let newOrders: IFood[];
+
+      const response = await api.get('/orders');
+
+      // eslint-disable-next-line prefer-const
+      newOrders = response.data;
+
+      function f_formatValue(item: IFood): IFood {
+        // eslint-disable-next-line no-param-reassign
+        item.formattedValue = formatValue(item.price);
+        return item;
+      }
+
+      newOrders = newOrders.map(f_formatValue);
+
+      setOrders(newOrders);
     }
 
     loadOrders();
@@ -59,7 +74,7 @@ const Orders: React.FC = () => {
               <FoodContent>
                 <FoodTitle>{item.name}</FoodTitle>
                 <FoodDescription>{item.description}</FoodDescription>
-                <FoodPricing>{item.formattedPrice}</FoodPricing>
+                <FoodPricing>{item.formattedValue}</FoodPricing>
               </FoodContent>
             </Food>
           )}
